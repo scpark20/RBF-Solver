@@ -101,16 +101,15 @@ class RBFSolver:
         K = torch.exp(-beta**2 * (lambdas - lambdas.T) ** 2)
         return K
     
-    def get_integral_vector(self, lambda_s, lambda_t, lambdas, beta, closed_form=False):
+    def get_integral_vector(self, lambda_s, lambda_t, lambdas, beta, closed_form=True):
         if beta == 0:
             return (torch.exp(lambda_t) - torch.exp(lambda_s)) * torch.ones_like(lambdas)
             
         h = lambda_t - lambda_s
         s = 1/(beta*h)
-        log_s = torch.log(s)
-
+        
         # closed-form
-        if log_s < 0 or closed_form:
+        if closed_form:
             def log_erf_diff(a, b):
                 return torch.log(torch.erfc(b)) + torch.log(1.0-torch.exp(torch.log(torch.erfc(a)) - torch.log(torch.erfc(b))))
     
