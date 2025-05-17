@@ -24,7 +24,6 @@ import numpy as np
 
 
 from torchvision.utils import make_grid, save_image
-from samplers.rbf_solver import RBFSolver
 from samplers.dpm_solver import DPM_Solver
 from samplers.uni_pc import UniPC
 from samplers.dpm_solver_v3 import DPM_Solver_v3
@@ -45,7 +44,6 @@ flags.DEFINE_integer("steps", default=10, help="Number of sampling steps")
 flags.DEFINE_integer("order", default=3, help="Order for sampling")
 flags.DEFINE_boolean("denoise_to_zero", default=False, help="Denoise at the last step")
 flags.DEFINE_string("skip_type", "logSNR", "The timestep schedule for sampling")
-flags.DEFINE_string("shape_dir", "shape_dir", "The dir to save shape parameters")
 flags.mark_flags_as_required(["ckp_path", "method"])
 
 
@@ -61,7 +59,6 @@ def main(argv):
         FLAGS.skip_type,
         FLAGS.denoise_to_zero,
         FLAGS.unipc_variant,
-        FLAGS.shape_dir,
     )
 
 
@@ -76,8 +73,7 @@ def sample(
     skip_type,
     denoise_to_zero,
     unipc_variant,
-    shape_dir,
-    batch_size=256,
+    batch_size=128,
     num_samples=50000,
     sigma_min=0.002,
     sigma_max=80,
@@ -132,25 +128,6 @@ def sample(
                 return x, steps
 
         sampling_fn = dpm_solver_sampler
-
-    elif method == "rbf_solver":
-        rbf_solver = RBFSolver(ns, shape_dir=shape_dir)
-
-        def rbf_solver_sampler(model_fn, z):
-            with torch.no_grad():
-                x = rbf_solver.sample(
-                    model_fn,
-                    z,
-                    steps=steps - 1 if denoise_to_zero else steps,
-                    t_start=sigma_max,
-                    t_end=sigma_min,
-                    order=order,
-                    skip_type=skip_type,
-                    lower_order_final=True,
-                )
-                return x, steps
-
-        sampling_fn = rbf_solver_sampler
     elif method == "uni_pc":
         uni_pc = UniPC(ns, algorithm_type="data_prediction", correcting_x0_fn=None, variant=unipc_variant)
 
@@ -205,27 +182,18 @@ def sample(
     this_sample_dir = os.path.join(eval_dir, sample_dir)
     os.makedirs(this_sample_dir, exist_ok=True)
     logging.info(this_sample_dir)
-    num_sampling_rounds = num_samples // batch_size + 1
-    for r in range(num_sampling_rounds):
-        latents = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution]).to(device)
-        latents = latents.to(torch.float64) * sigma_max
+    for r in range(1):
+        noise_raw = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution]).to(device)
+        latents = noise_raw.to(torch.float64) * sigma_max
         class_labels = None
         if net.label_dim:
             class_labels = torch.eye(net.label_dim)[torch.randint(net.label_dim, size=[batch_size])].to(device)
         noise_pred_fn = model_wrapper(net, ns, class_labels)
-        samples_raw, n = sampling_fn(noise_pred_fn, latents)
-        samples_raw = (samples_raw + 1) / 2
-        logging.info("sampling -- ckpt: %s, round: %d (NFE %d)" % (ckp_path.split("/")[-1].split(".")[-2], r, n))
-        samples = (samples_raw * 255).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
-        samples = samples.reshape((-1, net.img_resolution, net.img_resolution, net.img_channels))
-        np.savez_compressed(os.path.join(this_sample_dir, f"samples_{r}.npz"), samples=samples)
-
-        if r == 0:
-            nrow = int(np.sqrt(samples_raw.shape[0]))
-            image_grid = make_grid(samples_raw, nrow, padding=2)
-            with open(os.path.join(this_sample_dir, "sample.png"), "wb") as fout:
-                save_image(image_grid, fout)
-
+        sample_raw, n = sampling_fn(noise_pred_fn, latents)
+        torch.save({'noise_raw': noise_raw.cpu(),
+                    'sample_raw': sample_raw.cpu(),
+                    }, 
+                   os.path.join(this_sample_dir, f"samples_{r}.pt"))
 
 if __name__ == "__main__":
     app.run(main)
