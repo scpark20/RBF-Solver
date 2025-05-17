@@ -22,6 +22,9 @@ def load_cifar10_stats():
 
 
 def compute_fid(path):
+    data_stats = load_cifar10_stats()
+    data_pools = data_stats["pool_3"]
+
     images = []
     for file in os.listdir(path):
         if file.endswith(".npz"):
@@ -40,16 +43,17 @@ def compute_fid(path):
         gc.collect()
         all_pools.append(latents["pool_3"])
     all_pools = np.concatenate(all_pools, axis=0)[:50000, ...]
-    data_stats = load_cifar10_stats()
-    data_pools = data_stats["pool_3"]
 
     fid = tfgan.eval.frechet_classifier_distance_from_activations(data_pools, all_pools)
     return fid
 
-for name in ["DPM-Solver++", "UniPC_bh1", "UniPC_bh2", "DPM-Solver-v3"]:
-    fids = []
-    for step in [5, 6, 8, 10, 12, 15, 20, 25]:
+os.makedirs('fid', exist_ok=True)
+for name in ["RBF-Solver", "DPM-Solver++", "UniPC_bh1"]:
+    for step in [5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40]:
         path = f"samples/checkpoint_8/{name}_{step}"
         fid = compute_fid(path)
-        fids.append(float(fid))
-    print(name, fids, file=open("output.txt", "a"))
+        
+        filename = f"{name}_{step}_output.txt"
+        filename = os.path.join('fid', filename)
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(f"FID  : {fid}\n")

@@ -29,6 +29,7 @@ from models import utils as mutils
 from samplers.utils import NoiseScheduleVP
 from samplers.dpm_solver import DPM_Solver
 from samplers.uni_pc import UniPC
+from samplers.rbf_solver import RBFSolver
 
 _CORRECTORS = {}
 _PREDICTORS = {}
@@ -80,7 +81,7 @@ def get_corrector(name):
     return _CORRECTORS[name]
 
 
-def get_sampling_fn(config, sde, shape, inverse_scaler):
+def get_sampling_fn(config, sde, shape, inverse_scaler, shape_dir=None, rbf_optim=False):
     """Create a sampling function.
 
     Args:
@@ -160,6 +161,24 @@ def get_sampling_fn(config, sde, shape, inverse_scaler):
             lower_order_final=config.sampling.lower_order_final,
             device=config.device,
         )
+    elif sampler_name.lower() == "rbf_solver":
+        sampling_fn = get_rbf_solver_sampler(
+            sde=sde,
+            shape=shape,
+            inverse_scaler=inverse_scaler,
+            steps=config.sampling.steps,
+            eps=config.sampling.eps,
+            skip_type=config.sampling.skip_type,
+            method=config.sampling.uni_pc_method,
+            order=config.sampling.order,
+            denoise=config.sampling.noise_removal,
+            algorithm_type=config.sampling.uni_pc_algorithm_type,
+            thresholding=config.sampling.thresholding,
+            lower_order_final=config.sampling.lower_order_final,
+            device=config.device,
+            shape_dir=shape_dir,
+            optim=rbf_optim
+        )    
     else:
         raise ValueError(f"Sampler name {sampler_name} unknown.")
 
@@ -598,9 +617,9 @@ def get_dpm_solver_sampler(
                 correcting_x0_fn="dynamic_thresholding" if thresholding else None,
             )
             # Initial sample
-            x = sde.prior_sampling(shape).to(device)
-            x = dpm_solver.sample(
-                x,
+            noise = sde.prior_sampling(shape).to(device)
+            sample = dpm_solver.sample(
+                noise,
                 steps=steps - 1 if denoise else steps,
                 t_start=sde.T,
                 t_end=eps,
@@ -612,7 +631,7 @@ def get_dpm_solver_sampler(
                 rtol=rtol,
                 lower_order_final=lower_order_final,
             )
-            return inverse_scaler(x), steps
+            return noise, sample, inverse_scaler(sample), steps
 
     return dpm_solver_sampler
 
@@ -672,9 +691,9 @@ def get_uni_pc_sampler(
                 variant=variant,
             )
             # Initial sample
-            x = sde.prior_sampling(shape).to(device)
-            x = uni_pc.sample(
-                x,
+            noise = sde.prior_sampling(shape).to(device)
+            sample = uni_pc.sample(
+                noise,
                 steps=steps - 1 if denoise else steps,
                 t_start=sde.T,
                 t_end=eps,
@@ -686,6 +705,75 @@ def get_uni_pc_sampler(
                 rtol=rtol,
                 lower_order_final=lower_order_final,
             )
-            return inverse_scaler(x), steps
+            return noise, sample, inverse_scaler(sample), steps
 
     return uni_pc_sampler
+
+def get_rbf_solver_sampler(
+    sde,
+    shape,
+    inverse_scaler,
+    steps=10,
+    eps=1e-3,
+    skip_type="logSNR",
+    method="multistep",
+    order=3,
+    denoise=False,
+    algorithm_type="data_prediction",
+    thresholding=False,
+    lower_order_final=True,
+    device="cuda",
+    shape_dir=None,
+    optim=False
+):
+    """Create a RBF-Solver sampler.
+    """
+    ns = NoiseScheduleVP("linear", continuous_beta_0=sde.beta_0, continuous_beta_1=sde.beta_1)
+
+    def rbf_sampler(model, noise=None, sample=None):
+        """The RBF sampler function.
+        Args:
+          model: A score model.
+        Returns:
+          Samples, number of function evaluations.
+        """
+        with torch.no_grad():
+            noise_pred_fn = get_noise_fn(sde, model, train=False, continuous=True)
+            rbf = RBFSolver(
+                noise_pred_fn,
+                ns,
+                algorithm_type=algorithm_type,
+                correcting_x0_fn="dynamic_thresholding" if thresholding else None,
+                shape_dir=shape_dir
+            )
+            # Initial sample
+            if noise is None:
+                noise = sde.prior_sampling(shape)
+            noise = noise.to(device)
+
+            if optim:
+                sample = sample.to(device)
+                _ = rbf.sample_with_optim(
+                    noise,
+                    sample,
+                    steps=steps - 1 if denoise else steps,
+                    t_start=sde.T,
+                    t_end=eps,
+                    order=order,
+                    skip_type=skip_type,
+                    lower_order_final=lower_order_final,
+                )
+                return None
+            else:
+                sample = rbf.sample(
+                    noise,
+                    steps=steps - 1 if denoise else steps,
+                    t_start=sde.T,
+                    t_end=eps,
+                    order=order,
+                    skip_type=skip_type,
+                    lower_order_final=lower_order_final,
+                )
+                return noise, sample, inverse_scaler(sample), steps
+
+    return rbf_sampler

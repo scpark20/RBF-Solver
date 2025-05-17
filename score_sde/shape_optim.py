@@ -46,6 +46,7 @@ flags.DEFINE_string("statistics_dir", None, "Statistics path for DPM-Solver-v3."
 flags.DEFINE_string("eval_folder", "samples", "The folder name for storing evaluation results")
 flags.DEFINE_string("sample_folder", "sample", "The folder name for storing samples")
 flags.DEFINE_string("shape_dir", "shape_dir", "The dir for shape parameters")
+flags.DEFINE_string("pair_pt", None, "The pt file for noise/image pair")
 flags.mark_flags_as_required(["ckp_path", "config"])
 
 
@@ -68,15 +69,13 @@ def get_data_inverse_scaler(config):
 
 
 def main(argv):
-    sample(FLAGS.config, FLAGS.ckp_path, FLAGS.statistics_dir, FLAGS.eval_folder, FLAGS.sample_folder, FLAGS.shape_dir)
+    sample(FLAGS.config, FLAGS.ckp_path, FLAGS.pair_pt, FLAGS.shape_dir)
 
 
-def sample(config, ckp_path, statistics_dir, eval_folder="samples", sample_dir="sample", shape_dir='shape_dir'):
+def sample(config, ckp_path, pair_pt, shape_dir):
     # Fix the seed for z = sde.prior_sampling(shape).to(device) in deterministic sampling
     torch.manual_seed(config.seed)
-    eval_dir = os.path.join(eval_folder, ckp_path.split("/")[-1].split(".")[-2])
-    os.makedirs(eval_dir, exist_ok=True)
-
+    
     # Create data normalizer and its inverse
     scaler = get_data_scaler(config)
     inverse_scaler = get_data_inverse_scaler(config)
@@ -92,64 +91,19 @@ def sample(config, ckp_path, statistics_dir, eval_folder="samples", sample_dir="
     else:
         raise NotImplementedError(f"SDE {config.training.sde} unsupported.")
 
-    sampling_shape = (config.eval.batch_size, config.data.num_channels, config.data.image_size, config.data.image_size)
+    sampling_shape = (config.eval.target_batch_size, config.data.num_channels, config.data.image_size, config.data.image_size)
 
     state = restore_checkpoint(ckp_path, state, device=config.device)
     ema.copy_to(score_model.parameters())
 
-    if config.sampling.method == "dpm_solver_v3":
-        assert statistics_dir is not None, "No appropriate statistics found."
-        print("Use statistics", statistics_dir)
+    sampling_fn = sampling.get_sampling_fn(config, sde, sampling_shape, inverse_scaler, shape_dir=shape_dir, rbf_optim=True)
+    sampling_fn = functools.partial(sampling_fn, score_model)
 
-        noise_pred_fn = get_noise_fn(sde, score_model, train=False, continuous=True)
-        ns = NoiseScheduleVP("linear", continuous_beta_0=sde.beta_0, continuous_beta_1=sde.beta_1)
-        dpm_solver_v3 = DPM_Solver_v3(
-            statistics_dir,
-            noise_pred_fn,
-            ns,
-            steps=config.sampling.steps,
-            t_start=sde.T,
-            t_end=config.sampling.eps,
-            skip_type=config.sampling.skip_type,
-            degenerated=config.sampling.degenerated,
-            device=config.device,
-        )
-
-        def dpm_solver_v3_sampler():
-            with torch.no_grad():
-                x = sde.prior_sampling(sampling_shape).to(config.device)
-                x = dpm_solver_v3.sample(
-                    x,
-                    order=config.sampling.order,
-                    p_pseudo=config.sampling.predictor_pseudo,
-                    use_corrector=config.sampling.use_corrector,
-                    c_pseudo=config.sampling.corrector_pseudo,
-                    lower_order_final=config.sampling.lower_order_final,
-                )
-            return inverse_scaler(x), config.sampling.steps
-
-        sampling_fn = dpm_solver_v3_sampler
-    else:
-        sampling_fn = sampling.get_sampling_fn(config, sde, sampling_shape, inverse_scaler, shape_dir=shape_dir)
-        sampling_fn = functools.partial(sampling_fn, score_model)
-
-    this_sample_dir = os.path.join(eval_dir, sample_dir)
-    os.makedirs(this_sample_dir, exist_ok=True)
-    logging.info(this_sample_dir)
-    num_sampling_rounds = config.eval.num_samples // config.eval.batch_size + 1
-    for r in range(num_sampling_rounds):
-        _, _, samples_raw, n = sampling_fn()
-        logging.info("sampling -- round: %d (NFE %d)" % (r, n))
-        samples = np.clip(samples_raw.permute(0, 2, 3, 1).cpu().numpy() * 255.0, 0, 255).astype(np.uint8)
-        samples = samples.reshape((-1, config.data.image_size, config.data.image_size, config.data.num_channels))
-        np.savez_compressed(os.path.join(this_sample_dir, f"samples_{r}.npz"), samples=samples)
-
-        if r == 0:
-            nrow = int(np.sqrt(samples_raw.shape[0]))
-            image_grid = make_grid(samples_raw, nrow, padding=2)
-            with open(os.path.join(this_sample_dir, "sample.png"), "wb") as fout:
-                save_image(image_grid, fout)
-
+    data = torch.load(pair_pt)
+    noise = data['noise_raw'].to(config.device)
+    sample = data['sample_raw'].to(config.device)
+    sampling_fn(noise, sample)
+        
 
 if __name__ == "__main__":
     app.run(main)
