@@ -1,0 +1,10 @@
+absl_py==2.1.0
+numpy==1.23.5
+Requests==2.32.3
+six==1.17.0
+tensorflow==2.15.0
+tensorflow_gan==2.1.0
+tensorflow_hub==0.16.1
+torch==2.6.0
+torchvision==0.21.0
+tqdm==4.67.1

@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import math
 from .utils import expand_dims
 import numpy as np
-
+from tqdm import tqdm
 
 class UniPC:
     def __init__(
@@ -179,7 +179,6 @@ class UniPC:
             return self.multistep_uni_pc_vary_update(x, model_prev_list, t_prev_list, t, order, **kwargs)
 
     def multistep_uni_pc_vary_update(self, x, model_prev_list, t_prev_list, t, order, use_corrector=True):
-        print(f"using unified predictor-corrector with order {order} (solver type: vary coeff)")
         ns = self.noise_schedule
         assert order <= len(model_prev_list)
 
@@ -223,7 +222,7 @@ class UniPC:
             A_p = C_inv_p
 
         if use_corrector:
-            print("using corrector")
+            #print("using corrector")
             C_inv = torch.linalg.inv(C)
             A_c = C_inv
 
@@ -276,7 +275,7 @@ class UniPC:
         return x_t, model_t
 
     def multistep_uni_pc_bh_update(self, x, model_prev_list, t_prev_list, t, order, x_t=None, use_corrector=True):
-        print(f"using unified predictor-corrector with order {order} (solver type: B(h))")
+        #print(f"using unified predictor-corrector with order {order} (solver type: B(h))")
         ns = self.noise_schedule
         assert order <= len(model_prev_list)
 
@@ -343,7 +342,7 @@ class UniPC:
             D1s = None
 
         if use_corrector:
-            print("using corrector")
+            #print("using corrector")
             # for order 1, we use a simplified version
             if order == 1:
                 rhos_c = torch.tensor([0.5], device=b.device)
@@ -458,14 +457,14 @@ class UniPC:
                     model_prev_list.append(model_x)
 
                 # Compute the remaining values by `order`-th order multistep DPM-Solver.
-                for step in range(order, steps + 1):
+                for step in tqdm(range(order, steps + 1)):
                     t = timesteps[step]
                     if lower_order_final:
                         step_order = min(order, steps + 1 - step)
                     else:
                         step_order = order
                     if step == steps:
-                        print("do not run corrector at the last step")
+                        #print("do not run corrector at the last step")
                         use_corrector = False
                     else:
                         use_corrector = True
