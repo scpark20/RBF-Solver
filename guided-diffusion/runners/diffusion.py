@@ -103,7 +103,7 @@ class Diffusion(object):
         betas = self.betas = torch.from_numpy(betas).float().to(self.device)
         self.num_timesteps = betas.shape[0]
 
-    def sample(self):
+    def prepare_model(self):
         if self.config.model.model_type == "guided_diffusion":
             model = GuidedDiffusion_Model(
                 image_size=self.config.model.image_size,
@@ -168,7 +168,14 @@ class Diffusion(object):
         model.eval()
 
         print("Model loaded.")
+        self.model = model
+        self.classifier = classifier
 
+    def sample(self):
+        self.prepare_model()
+        model = self.model
+        classifier = self.classifier
+        
         if self.args.sample_type == "dpmsolver_v3":
             from samplers.dpm_solver_v3 import NoiseScheduleVP, DPM_Solver_v3
 
@@ -185,8 +192,35 @@ class Diffusion(object):
                 skip_type=self.args.skip_type,
                 degenerated=False,
             )
-        print("Begin sampling")
-        self.sample_fid(model, classifier=classifier)
+        print("Begin sampling", self.args.target)
+        if self.args.target:
+            self.sample_target(model, classifier=classifier)
+        else:
+            self.sample_fid(model, classifier=classifier)
+
+    def sample_target(self, model, classifier=None):
+        config = self.config
+        n_rounds = 16
+        config.sampling.batch_size = 16
+        with torch.no_grad():
+            for r in tqdm.tqdm(range(n_rounds), desc="Generating target image samples."):
+                n = config.sampling.batch_size
+                noise = torch.randn(
+                    n,
+                    config.data.channels,
+                    config.data.image_size,
+                    config.data.image_size,
+                    device=self.device,
+                )
+
+                sample, classes = self.sample_image(noise, model, classifier=classifier)
+
+                pt_file = os.path.join(self.args.image_folder, f"target_{r}.pt")
+                torch.save({'noise_raw': noise.cpu(),
+                            'sample_raw': sample.cpu(),
+                            'classes': classes.cpu(),
+                            }, pt_file)
+                print(pt_file, ' saved.')
 
     def sample_fid(self, model, classifier=None):
         config = self.config
@@ -225,7 +259,7 @@ class Diffusion(object):
                     tvu.save_image(x.cpu()[i], path)
                     img_id += 1
 
-    def sample_image(self, x, model, last=True, classifier=None, base_samples=None):
+    def sample_image(self, x, model, last=True, classifier=None, base_samples=None, classes=None, target=None, number=0):
         assert last
         try:
             skip = self.args.skip
@@ -233,15 +267,16 @@ class Diffusion(object):
             skip = 1
 
         classifier_scale = self.config.sampling.classifier_scale if self.args.scale is None else self.args.scale
-        if self.config.sampling.cond_class:
-            if self.args.fixed_class is None:
-                classes = torch.randint(low=0, high=self.config.data.num_classes, size=(x.shape[0],)).to(x.device)
+        if classes is None:
+            if self.config.sampling.cond_class:
+                if self.args.fixed_class is None:
+                    classes = torch.randint(low=0, high=self.config.data.num_classes, size=(x.shape[0],)).to(x.device)
+                else:
+                    classes = torch.randint(
+                        low=self.args.fixed_class, high=self.args.fixed_class + 1, size=(x.shape[0],)
+                    ).to(x.device)
             else:
-                classes = torch.randint(
-                    low=self.args.fixed_class, high=self.args.fixed_class + 1, size=(x.shape[0],)
-                ).to(x.device)
-        else:
-            classes = None
+                classes = None
 
         if classes is None:
             model_kwargs = {}
@@ -393,6 +428,64 @@ class Diffusion(object):
                 lower_order_final=self.args.lower_order_final,
                 denoise_to_zero=self.args.denoise,
             )
+
+        elif self.args.sample_type == "rbf_solver":
+            from samplers.uni_pc import NoiseScheduleVP, model_wrapper
+            from samplers.rbf_solver import RBFSolver
+
+            def model_fn(x, t, **model_kwargs):
+                out = model(x, t, **model_kwargs)
+                # If the model outputs both 'mean' and 'variance' (such as improved-DDPM and guided-diffusion),
+                # We only use the 'mean' output for DPM-Solver, because DPM-Solver is based on diffusion ODEs.
+                if "out_channels" in self.config.model.__dict__.keys():
+                    if self.config.model.out_channels == 6:
+                        out = torch.split(out, 3, dim=1)[0]
+                return out
+
+            def classifier_fn(x, t, y, **classifier_kwargs):
+                logits = classifier(x, t)
+                log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+                return log_probs[range(len(logits)), y.view(-1)]
+
+            noise_schedule = NoiseScheduleVP(schedule="discrete", betas=self.betas)
+            model_fn_continuous = model_wrapper(
+                model_fn,
+                noise_schedule,
+                model_type="noise",
+                model_kwargs=model_kwargs,
+                guidance_type="uncond" if classifier is None else "classifier",
+                condition=model_kwargs["y"] if "y" in model_kwargs.keys() else None,
+                guidance_scale=classifier_scale,
+                classifier_fn=classifier_fn,
+                classifier_kwargs={},
+            )
+            
+            rbf_solver = RBFSolver(
+                model_fn_continuous,
+                noise_schedule,
+                algorithm_type="data_prediction",
+                correcting_x0_fn="dynamic_thresholding" if self.args.thresholding else None,
+                shape_dir=self.args.shape_dir
+            )
+            if target is not None:
+                x = rbf_solver.sample_with_optim(
+                    x,
+                    target,
+                    steps=(self.args.timesteps - 1 if self.args.denoise else self.args.timesteps),
+                    order=self.args.order,
+                    skip_type=self.args.skip_type,
+                    lower_order_final=self.args.lower_order_final,
+                    number=number
+                )
+            else:    
+                x = rbf_solver.sample(
+                    x,
+                    steps=(self.args.timesteps - 1 if self.args.denoise else self.args.timesteps),
+                    order=self.args.order,
+                    skip_type=self.args.skip_type,
+                    lower_order_final=self.args.lower_order_final,                
+                )
+
         elif self.args.sample_type == "dpmsolver_v3":
             from samplers.dpm_solver_v3 import model_wrapper
 

@@ -60,8 +60,12 @@ def parse_args_and_config():
     parser.add_argument(
         "--lower_order_final", action="store_true", default=False, help="Use first-order at the last step"
     )
+    parser.add_argument(
+        "--target", action="store_true", default=False, help="Sample target"
+    )
     parser.add_argument("--thresholding", action="store_true", default=False, help="Use dynamic thresholding")
     parser.add_argument("--statistics_dir", type=str, default=None, help="Statistics path for DPM-Solver-v3.")
+    parser.add_argument("--shape_dir", type=str, default=None, help="shape path for RBF-Solver")
 
     args = parser.parse_args()
 

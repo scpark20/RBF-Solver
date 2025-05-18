@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES='0' python shape_optim256.py
