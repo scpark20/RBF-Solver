@@ -1,0 +1,2 @@
+DEVICES='0'
+CUDA_VISIBLE_DEVICES=$DEVICES python shape_optim.py
