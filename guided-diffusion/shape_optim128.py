@@ -15,13 +15,13 @@ NFEs = [5, 6, 8, 10, 12, 15, 20, 25, 30]
 # Init. Diffusion Model
 sys.argv = [
     "sample.py",
-    "--config", "imagenet256_guided.yml",  # 사용하려는 config
+    "--config", "imagenet128_guided.yml",  # 사용하려는 config
     "--sample_type", "rbf_solver",
     "--timesteps", "5",
     "--scale", "2.0",
     "--order", "2",
     "--lower_order_final",
-    "--shape_dir", "shape_dir/imagenet256/scale2.0"
+    "--shape_dir", "shape_dir/imagenet128/scale2.0"
 ]
 
 args, config = parse_args_and_config()
@@ -29,7 +29,7 @@ diffusion = Diffusion(args, config, rank=0)
 diffusion.prepare_model()
 
 for scale in SCALES:
-    shape_dir = f"shape_dir/imagenet256/scale{scale}"
+    shape_dir = f"shape_dir/imagenet128/scale{scale}"
     os.makedirs(shape_dir, exist_ok=True)
 
     # Load target-pairs
@@ -37,7 +37,7 @@ for scale in SCALES:
     samples = []
     classes = []
     for i in range(100):
-        pt_file = f'samples/256x256_diffusion/unipc_200_scale{scale}/images/target_{i}.pt'
+        pt_file = f'samples/128x128_diffusion/unipc_200_scale{scale}/images/target_{i}.pt'
         if not os.path.exists(pt_file):
             break
         data = torch.load(pt_file)
