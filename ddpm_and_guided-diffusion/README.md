@@ -1,7 +1,7 @@
 ## Imagenet64×64 (Improved-Diffusion)
 
 The `ddpm_and_guided-diffusion` directory contains everything needed to reproduce the Imagenet64×64 (Improved‑Diffusion) main results reported in the paper.  
-This implementation is adapted from the codebase at <https://github.com/LuChengTHU/dpm-solver>, which is  distributed under the **MIT License**.
+This implementation is adapted from the codebase at <https://github.com/LuChengTHU/dpm-solver>, which is distributed under the **MIT License**.
 
 ---
 

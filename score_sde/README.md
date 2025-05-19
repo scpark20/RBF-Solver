@@ -1,7 +1,7 @@
 ## CIFAR-10 (Score-SDE)
 
 The `score_sde` directory contains everything needed to reproduce the CIFAR-10 (Score-SDE) main results reported in the paper.  
-This implementation is adapted from the codebase at <https://github.com/thu-ml/DPM-Solver-v3>, which is  distributed under the **MIT License**.
+This implementation is adapted from the codebase at <https://github.com/thu-ml/DPM-Solver-v3>, which is distributed under the **MIT License**.
 
 ---
 

@@ -1,6 +1,6 @@
 ## CIFAR-10 (EDM)
 
-The `edm` directory contains everything needed to reproduce the CIFAR‑10 (EDM) main results reported in the paper. This implementation is adapted from the codebase at <https://github.com/thu-ml/DPM-Solver-v3>, which is  distributed under the **MIT License**.
+The `edm` directory contains everything needed to reproduce the CIFAR‑10 (EDM) main results reported in the paper. This implementation is adapted from the codebase at <https://github.com/thu-ml/DPM-Solver-v3>, which is distributed under the **MIT License**.
 
 ---
 
