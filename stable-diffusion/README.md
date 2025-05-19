@@ -1,68 +1,85 @@
-# DPM-Solver-v3 (Latent-Diffusion, Stable-Diffusion)
+## Stable‑Diffusion v1.4
 
-## Preparation
+The `stable-diffusion` directory contains everything needed to reproduce the Stable Diffusion v1.4 main results reported in the paper.  
+This implementation is adapted from the codebase at <https://github.com/thu-ml/DPM-Solver-v3>, which is distributed under the **MIT License**.
 
-Install the packages
+---
 
-```shell
-pip install opencv-python omegaconf tqdm einops pytorch-lightning==1.6.5 transformers kornia
-pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
-pip install -e ./src/clip/
-pip install -e ./src/taming-transformers/
+### Download Checkpoints
+Download the pre‑trained Stable Diffusion checkpoints for both the model and the classifier:
+```bash
+mkdir -p models/ldm/stable-diffusion-v1
+wget -O models/ldm/stable-diffusion-v1/sd-v1-4.ckpt \
+  https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt
 ```
 
+---
 
-For Latent-Diffusion on LSUN-Bedroom:
+### Download the MS‑COCO 2014 Annotation Dataset
+Download the MS‑COCO 2014 annotation dataset and extract 10 000 prompts.  
+This will create `prompt/prompt.txt`:
+```bash
+cd prompt
+wget http://images.cocodataset.org/annotations/annotations_trainval2014.zip
+unzip annotations_trainval2014.zip
+python extract_prompt.py
+```
 
-- Download the pretrained models
+---
 
-  ```shell
-  mkdir -p models/first_stage_models/vq-f4
-  wget -O models/first_stage_models/vq-f4/model.zip https://ommer-lab.com/files/latent-diffusion/vq-f4.zip
-  cd models/first_stage_models/vq-f4
-  unzip -o model.zip
-  cd ../../..
-  
-  mkdir -p models/ldm/lsun_beds256
-  wget -O models/ldm/lsun_beds256/lsun_beds-256.zip https://ommer-lab.com/files/latent-diffusion/lsun_bedrooms.zip
-  cd models/ldm/lsun_beds256
-  unzip -o lsun_beds-256.zip
-  cd ../../..
-  ```
+### Install Dependencies
+Install Python packages listed in `requirements.txt`:
+```bash
+pip install -r requirements.txt
+```
 
-- Download the folder `lsun_beds256` from https://drive.google.com/drive/folders/1sWq-htX9c3Xdajmo1BG-QvkbaeVtJqaq and put it under the folder `statistics/`.
+---
 
-For Stable-Diffusion-v1.4:
+### Sample Target  
+Generate target image–noise pairs.  
+This will create `outputs/uni_pc_200_{scale}/{0-31}.pt`.
+```bash
+./sh/sample_target.sh
+```
 
-- Download https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt from [CompVis/stable-diffusion-v-1-4-original · Hugging Face](https://huggingface.co/CompVis/stable-diffusion-v-1-4-original) and put it under the folder `models/ldm/stable-diffusion-v1/`.
+---
 
-- Download the folder `sd-v1-4` from https://drive.google.com/drive/folders/1sWq-htX9c3Xdajmo1BG-QvkbaeVtJqaq and put it under the folder `statistics/`.
+### Shape Optimization  
+Learn shape parameters for **RBF‑Solver**.  
+This will create shape files named `shape_dir/scale{scale}/NFE={NFE},p={order}.npz`.  
+*Note: The supplementary zip file already contains the `.npz` files.*
+```bash
+./sh/shape_optim.sh
+```
 
+---
 
-## Generate Samples
+### Sample with RBF‑Solver  
+Generate samples using RBF‑Solver:
+```bash
+./sh/sample_rbf.sh
+```
 
-For Latent-Diffusion on LSUN-Bedroom:
+---
 
-- Run `bash sample.sh lsun_beds256 <number-of-steps>`
+### Sample with Other Samplers  
+Generate comparison samples using baseline samplers:
+```bash
+./sh/sample_others.sh
+```
 
-- For example:
+---
 
-  ```shell
-  bash sample.sh lsun_beds256 5
-  ```
+### Extract CLIP Embeddings
+Extract CLIP embeddings for all samples:
+```bash
+./sh/extract_clip.sh
+```
 
-For Stable-Diffusion-v1.4:
+---
 
-- Run `bash sample.sh sd-v1-4 <number-of-steps> <guidance-scale> <prompt>`
-
-- For example:
-
-  ```shell
-  bash sample.sh sd-v1-4 5 7.5 "A beautiful castle beside a waterfall in the woods, by Josef Thoma, matte painting, trending on artstation HQ"
-  ```
-
-The samples of different samplers will be generated under the folder `outputs/`. You can modify the script as you wish.
-
-## Compute FID and MSE
-
-TODO
+### Show Results
+Display RMSE and cosine‑similarity results:
+```bash
+./sh/show_results.sh
+```

@@ -5,12 +5,13 @@ H=512
 W=512
 C=4
 F=8
-STEPS=200
-SAMPLE_METHOD="uni_pc"
 
+for ORDER in 2; do
+for STEPS in 200; do
 for SCALE in 1.5 3.5 5.5 7.5 9.5; do
-  OUTDIR="outputs/${SAMPLE_METHOD}_${STEPS}_${SCALE}"
-  python txt2img_sample_target.py \
+  SAMPLE_METHOD="uni_pc"
+  OUTDIR="outputs/${SAMPLE_METHOD}_${ORDER}_${STEPS}_${SCALE}"
+  python txt2img_sample.py \
     --from-file "prompt/prompt.txt" \
     --steps "${STEPS}" \
     --outdir "${OUTDIR}" \
@@ -18,5 +19,8 @@ for SCALE in 1.5 3.5 5.5 7.5 9.5; do
     --scale "${SCALE}" \
     --config "${CONFIG}" \
     --ckpt "${CKPT}" \
-    --H "${H}" --W "${W}" --C "${C}" --f "${F}"
+    --order "${ORDER}" \
+    --H "${H}" --W "${W}" --C "${C}" --f "${F}"  
+done
+done
 done
