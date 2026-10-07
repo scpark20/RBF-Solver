@@ -1,0 +1,11 @@
+.venv/
+.tfvenv/
+.cache/
+weights/
+__pycache__/
+*.pyc
+data/
+results/
+.history/
+.env
+*.log

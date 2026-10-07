@@ -1,0 +1,6 @@
+[submodule "sit/vendor/SiT"]
+	path = sit/vendor/SiT
+	url = https://github.com/willisma/SiT.git
+[submodule "1rf/vendor/RectifiedFlow"]
+	path = 1rf/vendor/RectifiedFlow
+	url = https://github.com/gnobitab/RectifiedFlow.git

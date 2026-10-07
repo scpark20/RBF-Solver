@@ -1,0 +1,31 @@
+services:
+  lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    working_dir: /opt/RBF-Solver
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - type: bind
+        source: ${RBF_REPO_HOST:?Set the absolute checkout directory}
+        target: /opt/RBF-Solver
+      - type: bind
+        source: ${RBF_DATA_HOST:?Set the restored external data directory}
+        target: /data/RBF-Solver
+      - type: bind
+        source: ${RBF_REFERENCE_HOST:?Set the reference directory}
+        target: /data/checkpoints
+        read_only: true
+    ports:
+      - "127.0.0.1:${SIT_PORT:-8765}:8765"
+      - "127.0.0.1:${RF_PORT:-8766}:8766"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${HOST_GPU_0:-0}", "${HOST_GPU_1:-1}"]
+              capabilities: [gpu]

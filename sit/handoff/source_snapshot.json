@@ -1,0 +1,7 @@
+{
+  "path": "results/handoff/source_before_portability.tar.gz",
+  "size": 7811855,
+  "sha256": "bcb4c444f042090ce4f14e66d2e48eb27b6e04a1b137a5e9bf4c8e7dd4120e2e",
+  "distribution": "Private operator transfer only; may contain original host paths",
+  "scope": "Source snapshot taken immediately before portability changes; compare per-file hashes to each run manifest"
+}

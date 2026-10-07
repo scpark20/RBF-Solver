@@ -1,0 +1,9 @@
+# Copy outside Git to .env. Absolute host paths; values are examples, not requirements.
+RBF_REPO_HOST=/path/to/RBF-Solver
+RBF_DATA_HOST=/path/to/experiment-assets
+RBF_REFERENCE_HOST=/path/to/reference-statistics
+# Host devices exposed to this container. Plans use visible device indices.
+HOST_GPU_0=0
+HOST_GPU_1=1
+SIT_PORT=8765
+RF_PORT=8766

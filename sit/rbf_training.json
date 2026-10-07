@@ -1,0 +1,75 @@
+{
+  "name": "SiT-S/2 FM RBF shape training",
+  "phase": "prepared",
+  "ready": true,
+  "output": "/data/RBF-Solver/results/rbf_training",
+  "cfgs": [
+    1.5,
+    3.5,
+    5.5,
+    7.5
+  ],
+  "nfes": [
+    5,
+    6,
+    8,
+    10
+  ],
+  "history_size": 2,
+  "target_pairs": 128,
+  "optimization_batch": 16,
+  "repetitions": 20,
+  "aggregation": "mean_log_gamma",
+  "replacement": true,
+  "teacher": {
+    "method": "unipc",
+    "variant": "bh2",
+    "nfe": 200,
+    "order": 2,
+    "t_start": 1.0,
+    "t_end": 0.001,
+    "lower_order_final": true,
+    "denoise_to_zero": false
+  },
+  "flow_time_start": 0.0,
+  "flow_time_end": 0.999,
+  "time_grid": "time_uniform",
+  "lower_order_final": true,
+  "log_gamma_min": -2.0,
+  "log_gamma_max": 2.0,
+  "log_gamma_points": 33,
+  "adams_log_shape": 2.0,
+  "seed": 1234,
+  "precision": "fp32",
+  "loss_precision": "fp32",
+  "gpus": [
+    0,
+    1
+  ],
+  "gpu_policy": "shared_cfg_queue",
+  "checkpoint": "/data/RBF-Solver/weights/SiT-diffusers/SiT-S-2-256/transformer/diffusion_pytorch_model.safetensors",
+  "vae": "/data/RBF-Solver/weights/SiT-diffusers/SiT-S-2-256/vae",
+  "checkpoint_sha256": "3b0754c57c2b6e2e4e74b181d1730a8bd824a30eafeaae9eaf8bc4015e8e4f39",
+  "target_path": "(1-t)*noise + t*teacher_terminal_latent; t is physical SiT time, not rescaled to the truncated endpoint",
+  "source_commit": "af306c69f016ed3ef5a72c96bbb08af285c79315",
+  "sources": {
+    "target_pairs": "User correction: paper basis; Appendix G and I.2.2 specify N=128.",
+    "optimization": "Paper Appendix G and I.2.2: M=16, K=20, UniPC NFE=200; 33 log-shape points over [-2,2].",
+    "aggregation": "guided-diffusion/shape_optim256.py averages optimal_log_shapes over K runs; np.random.randint samples with replacement.",
+    "teacher_order": "guided-diffusion/sample_target/imagenet256.sh invokes sample.py default order=2, time_uniform, lower_order_final, no extra denoise.",
+    "cfgs_nfes_history": "Existing user-specified CFG 1.5/3.5/5.5/7.5, NFE 5/6/8/10, history size 2.",
+    "adams": "Paper Section 3.6 and samplers/rbf_solver.py log_shape_max=2; candidate loss and rollout use the same branch.",
+    "target_path": "Paper Eq.13 target from forward path; SiT ICPlan linear flow alpha=t, sigma=1-t.",
+    "seed": "Existing user/reference seed=1234; target and resampling inputs will be persisted for reproducibility."
+  },
+  "implementation_notes": [
+    "Frozen SiT weights; original sample_with_optim loop fits gamma and derives RBF coefficients.",
+    "FM adapter changes the integral weight, state update and target path only.",
+    "Original Gaussian/Adams branch is applied consistently to candidate loss and rollout.",
+    "Keep the original 20 independent runs of logical batch 16 and the mean of optimal_log_shapes.",
+    "Teacher sampling batch is measured up to the 128-pair workload; optimizer batch 16 is the paper protocol.",
+    "Preparation does not start target generation, shape fitting or an RBF FID sweep."
+  ],
+  "implementation": "Reuse vendor.samplers.rbf_solver.RBFSolver.sample_with_optim unchanged through a minimal FM adapter.",
+  "preparation_validation": "/data/RBF-Solver/results/rbf_preparation_validation.json"
+}

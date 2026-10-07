@@ -1,0 +1,46 @@
+{
+  "sit_revision": "cbde832a40b153ccc79603412409da9c9b0c568c",
+  "parent_revision": "af306c69f016ed3ef5a72c96bbb08af285c79315",
+  "weights_metadata": "2f02393a3079dfa6210c10302cc927f59d2cb142\n3b0754c57c2b6e2e4e74b181d1730a8bd824a30eafeaae9eaf8bc4015e8e4f39\n1791343833.4621062\n",
+  "packages": {
+    "torch": "2.13.0+cu130",
+    "torchvision": "0.28.0+cu130",
+    "timm": "1.0.30",
+    "diffusers": "0.38.0",
+    "numpy": "2.3.5",
+    "scipy": "1.18.0",
+    "torch-fidelity": "0.4.0",
+    "safetensors": "0.8.0",
+    "huggingface-hub": "1.27.0"
+  },
+  "code_sha256": {
+    "paths.py": "9053076f37944a36aa5c58fc883da2aa333764f3e028c88d54504ee79af552c0",
+    "validate_fid_gpu.py": "6a1a54009c679a9192881596b099a2b865d479b5d464b66b8558159c49dd7d3e",
+    "test_sampling.py": "7a25162bf7ec56e51f1dc9ba89d4f19671b3c7816fad1d102ce936a6ef4c8342",
+    "summarize.py": "1158bcc7427f5360a5b78058176b0afe919b10cd556d3baadc3ee4b02291fa61",
+    "validate_fid_tf.py": "1576dcab3a9d3ab9d8ea8becc2539f60658015a834da6eb60d284dd6e2a0c45e",
+    "dashboard.py": "463b7b05ddace0bdc3b69ddfbdfc09d09450aca0c26fe50ffb200fecfabbc8fd",
+    "benchmark.py": "ee6dcb3691f8d212578df99b40de659c18b024082b581cf2b7ed3c13b976d10f",
+    "fid_gpu.py": "185ef6d9595cba7f1c5a291988ceffefcfa3f9f9dec3e8d03462880fc5ed4035",
+    "sampling.py": "759902438b1e96aa4d64b2f78967803c2e913d1155deed98b786d8796fb9c318",
+    "run_comparison.sh": "a6c431f76f8b693ffd4524dc73c4799da64aaed087d4358b6a5b27f1353ba78b",
+    "dashboard.html": "2f5305b1a53b160efc85087b617089dfe4d9a6fb1cc9d6a2f77135b5a44e3d02",
+    "vendor/samplers/uni_pc.py": "20524dc4b1d3161cb72d9ff75a4c7382e7597f48bfa025bbba8a33203f42dc51",
+    "vendor/samplers/dpm_solver.py": "b7e3c332ba68bbe885083e2c5f738d98a128e8040b805df512c7b8ff09fa0126"
+  },
+  "fid_validation": {
+    "n": 32,
+    "max_abs": 1.615285873413086e-05,
+    "rmse": 1.1364454621798359e-06,
+    "relative_l2": 2.834247425198555e-06,
+    "passed": true,
+    "atol": 0.003,
+    "rtol": 0.003,
+    "source": "OpenAI ADM frozen GraphDef CPU vs torch-fidelity 0.4.0 CUDA float32, 32 reference images"
+  },
+  "storage": {
+    "code": "sit",
+    "weights": "/data/RBF-Solver/weights",
+    "results": "/data/RBF-Solver/results"
+  }
+}
