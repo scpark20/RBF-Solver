@@ -2,7 +2,9 @@
 
 이 저장소는 RBF-Solver의 기존 구현에 SiT-S/2와 비증류 1-Rectified Flow 연결부를 추가한 실험이다.
 [논문](https://arxiv.org/abs/2603.13330)의 Guided Diffusion/score-SDE 수치를 그대로 재현했다는 뜻은 아니다.
-**처음 인수한 사람은 `2–5절의 복원·검증부터 수행한다. 대시보드 시작은 샘플링 시작이 아니다.**
+**처음 인수한 사람은 2–5절의 복원·검증부터 수행한다. 대시보드 시작은 샘플링 시작이 아니다.**
+
+화면별 역할·지표 해석·조작은 [실제 스크린샷을 포함한 대시보드 가이드](DASHBOARD_GUIDE.md)를 참고한다.
 
 ## 1. 인수인계 상태와 기준
 
@@ -218,7 +220,7 @@ SiT 후속 실행은 해당 NFE의 학습·세 방법 비교를 마친 뒤 다�
 |---|---|---|
 | 모델 | SiT-S/2, ImageNet256 latent | 공식 CIFAR-10 1-RF EMA, 비증류 |
 | 차수 / UniPC | 2 / BH2 | 3 / BH1 |
-| Seed / precision | 1234 / FP32, TF32 off | 동일 |
+| Seed / precision | 1234 / FP32, TF32 off | 42 / FP32, TF32 off |
 | 마지막 단계 / extra denoise | 저차 / 없음 | 동일 |
 | 격자 | time_uniform | 원본 VP CPU FP32 log-SNR uniform |
 | target / teacher | 128 / UniPC-200 | 128 / UniPC-200 |

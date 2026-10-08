@@ -1,0 +1,87 @@
+{
+  "viewport": {
+    "width": 1600,
+    "height": 1100
+  },
+  "source": "Live dashboards backed by completed experimental records; no simulated runs",
+  "privacy": "No browser address bar or private host address is captured; GPU mask is declared per image",
+  "screenshots": [
+    {
+      "file": "01-sit-comparison.png",
+      "caption": "SiT: CFG 0.0, 11 NFE, three samplers; completed records.",
+      "redaction": null,
+      "sha256": "90cc2db70bdcf8a357c52186015e7b5e597aea32cc4e39f7c2098d252a673e4d",
+      "captured_utc": "2026-10-08T03:31:08.571477+00:00"
+    },
+    {
+      "file": "02-sit-previews.png",
+      "caption": "SiT: CFG 0.0, NFE 6; three stored preview grids, latest requested RBF retraining.",
+      "redaction": null,
+      "sha256": "af4bf241614ee2539f6a1e862d98a521bcda9423cd69140af56c781a6c7b8670",
+      "captured_utc": "2026-10-08T03:31:09.089503+00:00"
+    },
+    {
+      "file": "03-preview-dialog.png",
+      "caption": "Actual image enlargement dialog; DPM-Solver++, CFG 0.0, NFE 6.",
+      "redaction": null,
+      "sha256": "6e37df38e604871ed62c61a1ea9f2dcaa42f2c970b7d28aceff66ed30ac7ed61",
+      "captured_utc": "2026-10-08T03:31:09.459940+00:00"
+    },
+    {
+      "file": "04-condition-details.png",
+      "caption": "Expanded condition details; first rows of the full 81-condition table.",
+      "redaction": null,
+      "sha256": "1d81cfd4f9c16643be732140bbad1b02d830851149c9c00be053fbbec05b8091",
+      "captured_utc": "2026-10-08T03:31:09.657675+00:00"
+    },
+    {
+      "file": "05-rbf-pipeline.png",
+      "caption": "SiT CFG 0.0: 128 targets, 220 optimization repetitions over 11 NFE, 110000 RBF evaluation images.",
+      "redaction": null,
+      "sha256": "68d5c69cf95d92a3904974e8a0b962ba05893282e2ce995a660bd4206166b8b0",
+      "captured_utc": "2026-10-08T03:31:10.939613+00:00"
+    },
+    {
+      "file": "06-learned-coefficients.png",
+      "caption": "SiT CFG 0.0 NFE 6: log gamma and predictor/corrector CMR; unused stages omitted.",
+      "redaction": null,
+      "sha256": "b95b9aeadf56bfbbc66c5dc850f28de882e753cde4a1125ed82fc3b2c9005fd9",
+      "captured_utc": "2026-10-08T03:31:11.300118+00:00"
+    },
+    {
+      "file": "07-signed-coefficients.png",
+      "caption": "Signed integration coefficients and FM time increments; displayed rounded values.",
+      "redaction": null,
+      "sha256": "8625c0fdc1aba09631736120bddedd58c88a7c981c4b70b81454cd3e85c28aed",
+      "captured_utc": "2026-10-08T03:31:11.499574+00:00"
+    },
+    {
+      "file": "08-gpu-status.png",
+      "caption": "Actual GPU status view; device model, memory specification and measured capacity values masked for publication.",
+      "redaction": "DOM-only masking of device model, VRAM figures and capacity range. Application source and experiment data are unchanged.",
+      "sha256": "4aabb9b279f164723b3625a42ac5498465aec210f4380f36ba0f905f4f1913d8",
+      "captured_utc": "2026-10-08T03:31:11.619970+00:00"
+    },
+    {
+      "file": "09-experiment-settings.png",
+      "caption": "Read-only comparison, target, optimization and FID validation settings.",
+      "redaction": null,
+      "sha256": "ec962281007edd6943c251db7217c8ec1562481641d7e172263edcbc6b659900",
+      "captured_utc": "2026-10-08T03:31:11.736434+00:00"
+    },
+    {
+      "file": "10-1rf-comparison.png",
+      "caption": "1-RF CIFAR-10: unconditional, 33 completed conditions, 50000 images per condition.",
+      "redaction": null,
+      "sha256": "ed7e3a4eb1a0990a1fa53bcbcc107940ec960d6dd7fa2ad83df30016f8fed40f",
+      "captured_utc": "2026-10-08T03:31:12.503978+00:00"
+    },
+    {
+      "file": "11-1rf-pipeline.png",
+      "caption": "1-RF: 128 targets, one 128-pair fit per NFE, 550000 RBF evaluation images.",
+      "redaction": null,
+      "sha256": "f5b2e5912d0b9c3943b802ab9e2b92855d96550293aed9f0090d9e181a38c1fb",
+      "captured_utc": "2026-10-08T03:31:12.722371+00:00"
+    }
+  ]
+}
